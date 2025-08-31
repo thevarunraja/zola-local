@@ -179,13 +179,19 @@ export async function readFromIndexedDB<T>(
     const store = stores[table]
     if (key) {
       const result = await get<T>(key, store)
+      console.log(`readFromIndexedDB: Read single item from ${table}:`, result)
       return result as T
     }
 
     const allKeys = await keys(store)
+    console.log(`readFromIndexedDB: Found ${allKeys.length} keys in ${table}`)
     if (allKeys.length > 0) {
       const results = await getMany<T>(allKeys as string[], store)
-      return results.filter(Boolean)
+      const filtered = results.filter(Boolean)
+      console.log(
+        `readFromIndexedDB: Retrieved ${filtered.length} items from ${table}`
+      )
+      return filtered
     }
 
     return []
@@ -213,10 +219,22 @@ export async function writeToIndexedDB<T extends { id: string | number }>(
 
   try {
     const store = stores[table]
+
+    // If data is an empty array, clear the store first
+    if (Array.isArray(data) && data.length === 0) {
+      console.log(`writeToIndexedDB: Clearing ${table} store (empty data)`)
+      const allKeys = await keys(store)
+      if (allKeys.length > 0) {
+        await delMany(allKeys as string[], store)
+      }
+      return
+    }
+
     const entries: [IDBValidKey, T][] = Array.isArray(data)
       ? data.map((item) => [item.id, item])
       : [[data.id, data]]
 
+    console.log(`writeToIndexedDB: Writing ${entries.length} items to ${table}`)
     await setMany(entries, store)
   } catch (error) {
     console.warn(`writeToIndexedDB failed (${table}):`, error)

@@ -1,6 +1,7 @@
+import createBundleAnalyzer from "@next/bundle-analyzer"
 import type { NextConfig } from "next"
 
-const withBundleAnalyzer = require("@next/bundle-analyzer")({
+const withBundleAnalyzer = createBundleAnalyzer({
   enabled: process.env.ANALYZE === "true",
 })
 
@@ -8,19 +9,9 @@ const nextConfig: NextConfig = withBundleAnalyzer({
   output: "standalone",
   experimental: {
     optimizePackageImports: ["@phosphor-icons/react"],
-    nodeMiddleware: true,
   },
   serverExternalPackages: ["shiki", "vscode-oniguruma"],
-  images: {
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "*.supabase.co",
-        port: "",
-        pathname: "/storage/v1/object/public/**",
-      },
-    ],
-  },
+  // Removed Supabase image configuration since we're not using it
   eslint: {
     // @todo: remove before going live
     ignoreDuringBuilds: true,

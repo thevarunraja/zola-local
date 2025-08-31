@@ -1,14 +1,10 @@
-import { saveFinalAssistantMessage } from "@/app/api/chat/db"
 import type {
   ChatApiParams,
   LogUserMessageParams,
   StoreAssistantMessageParams,
-  SupabaseClientType,
 } from "@/app/types/api.types"
 import { FREE_MODELS_IDS, NON_AUTH_ALLOWED_MODELS } from "@/lib/config"
 import { getProviderForModel } from "@/lib/openproviders/provider-map"
-import { sanitizeUserInput } from "@/lib/sanitize"
-import { validateUserIdentity } from "@/lib/server/api"
 import { checkUsageByModel, incrementUsage } from "@/lib/usage"
 import { getUserKey, type ProviderWithoutOllama } from "@/lib/user-keys"
 
@@ -16,9 +12,9 @@ export async function validateAndTrackUsage({
   userId,
   model,
   isAuthenticated,
-}: ChatApiParams): Promise<SupabaseClientType | null> {
-  const supabase = await validateUserIdentity(userId, isAuthenticated)
-  if (!supabase) return null
+}: ChatApiParams): Promise<boolean> {
+  // Since we removed Supabase, we're always in local mode
+  // For local mode, we assume users are authenticated
 
   // Check if user is authenticated
   if (!isAuthenticated) {
@@ -47,23 +43,18 @@ export async function validateAndTrackUsage({
     }
   }
 
-  // Check usage limits for the model
-  await checkUsageByModel(supabase, userId, model, isAuthenticated)
+  // Check usage limits for the model (now uses localStorage)
+  await checkUsageByModel(userId, model, isAuthenticated)
 
-  return supabase
+  return true
 }
-
 export async function incrementMessageCount({
-  supabase,
   userId,
 }: {
-  supabase: SupabaseClientType
   userId: string
 }): Promise<void> {
-  if (!supabase) return
-
   try {
-    await incrementUsage(supabase, userId)
+    await incrementUsage(userId)
   } catch (err) {
     console.error("Failed to increment message count:", err)
     // Don't throw error as this shouldn't block the chat
@@ -71,7 +62,6 @@ export async function incrementMessageCount({
 }
 
 export async function logUserMessage({
-  supabase,
   userId,
   chatId,
   content,
@@ -80,39 +70,31 @@ export async function logUserMessage({
   isAuthenticated,
   message_group_id,
 }: LogUserMessageParams): Promise<void> {
-  if (!supabase) return
-
-  const { error } = await supabase.from("messages").insert({
-    chat_id: chatId,
-    role: "user",
-    content: sanitizeUserInput(content),
-    experimental_attachments: attachments,
-    user_id: userId,
+  // In local mode, we don't persist messages to a database
+  // This could be extended to use IndexedDB if needed
+  console.log("User message logged (local mode):", {
+    chatId,
+    userId,
+    content: content.substring(0, 100) + "...",
+    attachments: attachments?.length || 0,
+    model,
+    isAuthenticated,
     message_group_id,
   })
-
-  if (error) {
-    console.error("Error saving user message:", error)
-  }
 }
 
 export async function storeAssistantMessage({
-  supabase,
   chatId,
   messages,
   message_group_id,
   model,
 }: StoreAssistantMessageParams): Promise<void> {
-  if (!supabase) return
-  try {
-    await saveFinalAssistantMessage(
-      supabase,
-      chatId,
-      messages,
-      message_group_id,
-      model
-    )
-  } catch (err) {
-    console.error("Failed to save assistant messages:", err)
-  }
+  // In local mode, we don't persist messages to a database
+  // This could be extended to use IndexedDB if needed
+  console.log("Assistant message stored (local mode):", {
+    chatId,
+    messages: messages.length,
+    message_group_id,
+    model,
+  })
 }

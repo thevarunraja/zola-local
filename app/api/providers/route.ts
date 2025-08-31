@@ -1,25 +1,11 @@
-import { createClient } from "@/lib/supabase/server"
-import { getEffectiveApiKey, ProviderWithoutOllama } from "@/lib/user-keys"
 import { NextRequest, NextResponse } from "next/server"
 
 export async function POST(request: NextRequest) {
   try {
-    const { provider, userId } = await request.json()
+    const { provider } = await request.json()
 
-    const supabase = await createClient()
-    if (!supabase) {
-      return NextResponse.json(
-        { error: "Database not available" },
-        { status: 500 }
-      )
-    }
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user || user.id !== userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
+    // In local-only mode, we don't have user authentication
+    // Return default values for API compatibility
 
     // Skip Ollama since it doesn't use API keys
     if (provider === "ollama") {
@@ -29,24 +15,9 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    const apiKey = await getEffectiveApiKey(
-      userId,
-      provider as ProviderWithoutOllama
-    )
-
-    const envKeyMap: Record<ProviderWithoutOllama, string | undefined> = {
-      openai: process.env.OPENAI_API_KEY,
-      mistral: process.env.MISTRAL_API_KEY,
-      perplexity: process.env.PERPLEXITY_API_KEY,
-      google: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
-      anthropic: process.env.ANTHROPIC_API_KEY,
-      xai: process.env.XAI_API_KEY,
-      openrouter: process.env.OPENROUTER_API_KEY,
-    }
-
+    // In local-only mode, we use environment variables only
     return NextResponse.json({
-      hasUserKey:
-        !!apiKey && apiKey !== envKeyMap[provider as ProviderWithoutOllama],
+      hasUserKey: false, // No user keys in local mode
       provider,
     })
   } catch (error) {

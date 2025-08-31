@@ -1,51 +1,16 @@
-import { createClient } from "@/lib/supabase/server"
-import { createGuestServerClient } from "@/lib/supabase/server-guest"
-import { isSupabaseEnabled } from "../supabase/config"
-
 /**
- * Validates the user's identity
+ * Validates the user's identity (simplified for local mode)
  * @param userId - The ID of the user.
- * @param isAuthenticated - Whether the user is authenticated.
- * @returns The Supabase client.
+ * @returns Always returns true in local mode
  */
-export async function validateUserIdentity(
-  userId: string,
-  isAuthenticated: boolean
-) {
-  if (!isSupabaseEnabled) {
-    return null
+export async function validateUserIdentity(userId: string): Promise<boolean> {
+  // In local mode without Supabase, we simply validate that we have a userId
+  // This could be extended with more sophisticated local validation if needed
+
+  if (!userId) {
+    throw new Error("User ID is required")
   }
 
-  const supabase = isAuthenticated
-    ? await createClient()
-    : await createGuestServerClient()
-
-  if (!supabase) {
-    throw new Error("Failed to initialize Supabase client")
-  }
-
-  if (isAuthenticated) {
-    const { data: authData, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !authData?.user?.id) {
-      throw new Error("Unable to get authenticated user")
-    }
-
-    if (authData.user.id !== userId) {
-      throw new Error("User ID does not match authenticated user")
-    }
-  } else {
-    const { data: userRecord, error: userError } = await supabase
-      .from("users")
-      .select("id")
-      .eq("id", userId)
-      .eq("anonymous", true)
-      .maybeSingle()
-
-    if (userError || !userRecord) {
-      throw new Error("Invalid or missing guest user")
-    }
-  }
-
-  return supabase
+  // For local mode, we assume the authentication state is valid
+  return true
 }

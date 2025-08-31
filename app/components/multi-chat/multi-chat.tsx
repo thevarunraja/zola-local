@@ -245,7 +245,6 @@ export function MultiChat() {
       let chatIdToUse = multiChatId || chatId
       if (!chatIdToUse) {
         const createdChat = await createNewChat(
-          uid,
           prompt,
           selectedModelIds[0],
           !!user?.id

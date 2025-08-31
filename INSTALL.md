@@ -1,6 +1,6 @@
-# Zola Installation Guide
+# Zola Local Installation Guide
 
-Zola is a free, open-source AI chat app with multi-model support. This guide covers how to install and run Zola on different platforms, including Docker deployment options.
+Zola is a free, open-source AI chat app with multi-model support. This is the **local-only version** that stores all data in your browser's IndexedDB - no external database or authentication required.
 
 ![Zola screenshot](./public/cover_zola.webp)
 
@@ -9,7 +9,6 @@ Zola is a free, open-source AI chat app with multi-model support. This guide cov
 - Node.js 18.x or later
 - npm or yarn
 - Git
-- Supabase account (for auth and storage)
 - API keys for supported AI models (OpenAI, Mistral, etc.) OR Ollama for local models
 
 ## Environment Setup
@@ -17,37 +16,24 @@ Zola is a free, open-source AI chat app with multi-model support. This guide cov
 First, you'll need to set up your environment variables. Create a `.env.local` file in the root of the project with the variables from `.env.example`
 
 ```bash
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-SUPABASE_SERVICE_ROLE=your_supabase_service_role_key
+# CSRF Protection (required)
+CSRF_SECRET=your_32_character_random_string
 
-# OpenAI
-OPENAI_API_KEY=your_openai_api_key
-
-# Mistral
+# AI Model API Keys (optional - choose the ones you want to use)
+OPENAI_API_KEY=sk-your_openai_api_key
 MISTRAL_API_KEY=your_mistral_api_key
-
-# OpenRouter
 OPENROUTER_API_KEY=your_openrouter_api_key
-
-# CSRF Protection
-CSRF_SECRET=your_csrf_secret_key
-
-# Exa
-EXA_API_KEY=your_exa_api_key
-
-# Gemini
 GOOGLE_GENERATIVE_AI_API_KEY=your_gemini_api_key
-
-# Anthropic
 ANTHROPIC_API_KEY=your_anthropic_api_key
-
-# Xai
 XAI_API_KEY=your_xai_api_key
+PERPLEXITY_API_KEY=your_perplexity_api_key
 
-# Ollama (for local AI models)
+# Ollama Configuration (for local AI models)
 OLLAMA_BASE_URL=http://localhost:11434
+
+# Developer Tools (optional)
+EXA_API_KEY=your_exa_api_key
+GITHUB_TOKEN=your_github_token
 
 # Optional: Set the URL for production
 # NEXT_PUBLIC_VERCEL_URL=your_production_url
@@ -113,43 +99,40 @@ ENCRYPTION_KEY=your_generated_base64_encryption_key
 
 With BYOK enabled, users can securely add their own API keys through the settings interface, giving them access to AI models using their personal accounts and usage limits.
 
-#### Google OAuth Authentication
+## Local-Only Mode
 
-1. Go to your Supabase project dashboard
-2. Navigate to Authentication > Providers
-3. Find the "Google" provider
-4. Enable it by toggling the switch
-5. Configure the Google OAuth credentials:
-   - You'll need to set up OAuth 2.0 credentials in the Google Cloud Console
-   - Add your application's redirect URL: https://[YOUR_PROJECT_REF].supabase.co/auth/v1/callback
-   - Get the Client ID and Client Secret from Google Cloud Console
-   - Add these credentials to the Google provider settings in Supabase
+This version of Zola runs entirely in your browser without requiring external authentication or databases:
 
-Here are the detailed steps to set up Google OAuth:
+- **No Registration Required**: Start chatting immediately without creating an account
+- **Local Data Storage**: All chats and messages are stored in your browser's IndexedDB
+- **Privacy-First**: Your conversations never leave your device
+- **No Supabase Setup**: No external database configuration needed
 
-1. Go to the Google Cloud Console
-2. Create a new project or select an existing one
-3. Enable the Google+ API
-4. Go to Credentials > Create Credentials > OAuth Client ID
-5. Configure the OAuth consent screen if you haven't already
-6. Set the application type as "Web application"
-7. Add these authorized redirect URIs:
+### Data Storage
 
-- https://[YOUR_PROJECT_REF].supabase.co/auth/v1/callback
-- http://localhost:3000/auth/callback (for local development)
+- **Chats**: Stored locally in IndexedDB for persistence across browser sessions
+- **Messages**: All conversation history stays on your device
+- **User Preferences**: Settings are saved in localStorage
+- **Usage Tracking**: Rate limiting uses localStorage (no external tracking)
 
-8. Copy the Client ID and Client Secret
-9. Go back to your Supabase dashboard
-10. Paste the Client ID and Client Secret in the Google provider settings
-11. Save the changes
+### Features Available
 
-#### Guest user setup
+✅ Multi-model AI chat support  
+✅ Local chat history and persistence  
+✅ Model switching and configuration  
+✅ File uploads and attachments  
+✅ Rate limiting and usage tracking  
+✅ Responsive design and themes  
 
-1. Go to your Supabase project dashboard
-2. Navigate to Authentication > Providers
-3. Toggle on "Allow anonymous sign-ins"
+### Features Not Available (Local-Only)
 
-This allows users limited access to try the product before properly creating an account.
+❌ User authentication and accounts  
+❌ Chat sharing between devices  
+❌ Cloud synchronization  
+❌ Projects and collaboration  
+❌ Public chat sharing  
+
+## Local Installation
 
 ### Database Schema
 
@@ -594,11 +577,10 @@ docker build -t zola .
 
 # Run the container
 docker run -p 3000:3000 \
-  -e NEXT_PUBLIC_SUPABASE_URL=your_supabase_url \
-  -e NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key \
-  -e SUPABASE_SERVICE_ROLE=your_supabase_service_role_key \
+  -e CSRF_SECRET=your_csrf_secret \
   -e OPENAI_API_KEY=your_openai_api_key \
   -e MISTRAL_API_KEY=your_mistral_api_key \
+  -e ANTHROPIC_API_KEY=your_anthropic_api_key \
   zola
 ```
 
@@ -618,11 +600,12 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=production
-      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
-      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
-      - SUPABASE_SERVICE_ROLE=${SUPABASE_SERVICE_ROLE}
+      - CSRF_SECRET=${CSRF_SECRET}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - MISTRAL_API_KEY=${MISTRAL_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - XAI_API_KEY=${XAI_API_KEY}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
     restart: unless-stopped
 ```
 

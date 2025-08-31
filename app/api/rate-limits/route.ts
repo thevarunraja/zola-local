@@ -16,13 +16,17 @@ export async function GET(req: Request) {
 
     if (!usage) {
       return new Response(
-        JSON.stringify({ error: "Supabase not available in this deployment." }),
+        JSON.stringify({
+          error: "Local-only mode: Rate limiting uses localStorage.",
+        }),
         { status: 200 }
       )
     }
 
     return new Response(JSON.stringify(usage), { status: 200 })
   } catch (err: unknown) {
-    return new Response(JSON.stringify({ error: (err as Error).message }), { status: 500 })
+    return new Response(JSON.stringify({ error: (err as Error).message }), {
+      status: 500,
+    })
   }
 }

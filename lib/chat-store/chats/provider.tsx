@@ -48,28 +48,37 @@ export function useChats() {
 }
 
 export function ChatsProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useUser()
+  const { user, isLoading: userLoading } = useUser()
   const [isLoading, setIsLoading] = useState(true)
   const [chats, setChats] = useState<Chats[]>([])
 
   useEffect(() => {
-    if (!user?.id) return
+    // Don't load chats if user is still loading
+    if (userLoading) {
+      return
+    }
 
+    // If user is loaded but no user ID, we can still load cached chats
     const load = async () => {
       setIsLoading(true)
-      const cached = await getCachedChats()
-      setChats(cached)
-
       try {
-        const fresh = await fetchAndCacheChats(user.id)
-        setChats(fresh)
+        const cached = await getCachedChats()
+        setChats(cached)
+
+        // Only fetch fresh data if we have a user ID
+        if (user?.id) {
+          const fresh = await fetchAndCacheChats(user.id)
+          setChats(fresh)
+        }
+      } catch (error) {
+        console.error("ChatsProvider: Failed to load chats:", error)
       } finally {
         setIsLoading(false)
       }
     }
 
     load()
-  }, [user?.id])
+  }, [user?.id, userLoading])
 
   const refresh = async () => {
     if (!user?.id) return

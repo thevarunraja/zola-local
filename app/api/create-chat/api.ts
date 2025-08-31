@@ -1,4 +1,3 @@
-import { validateUserIdentity } from "@/lib/server/api"
 import { checkUsageByModel } from "@/lib/usage"
 
 type CreateChatInput = {
@@ -16,45 +15,21 @@ export async function createChatInDb({
   isAuthenticated,
   projectId,
 }: CreateChatInput) {
-  const supabase = await validateUserIdentity(userId, isAuthenticated)
-  if (!supabase) {
-    return {
-      id: crypto.randomUUID(),
-      user_id: userId,
-      title,
-      model,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    }
-  }
+  // Since we removed Supabase, we're always in local mode
+  // Check usage limits (now uses localStorage)
+  await checkUsageByModel(userId, model, isAuthenticated)
 
-  await checkUsageByModel(supabase, userId, model, isAuthenticated)
-
-  const insertData: {
-    user_id: string
-    title: string
-    model: string
-    project_id?: string
-  } = {
+  // Generate a local chat object
+  return {
+    id: crypto.randomUUID(),
     user_id: userId,
     title: title || "New Chat",
     model,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    project_id: projectId || null,
+    public: false,
+    pinned: false,
+    pinned_at: null,
   }
-
-  if (projectId) {
-    insertData.project_id = projectId
-  }
-
-  const { data, error } = await supabase
-    .from("chats")
-    .insert(insertData)
-    .select("*")
-    .single()
-
-  if (error || !data) {
-    console.error("Error creating chat:", error)
-    return null
-  }
-
-  return data
 }

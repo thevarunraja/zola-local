@@ -1,9 +1,7 @@
 import { APP_DOMAIN } from "@/lib/config"
 import { isSupabaseEnabled } from "@/lib/supabase/config"
-import { createClient } from "@/lib/supabase/server"
 import type { Metadata } from "next"
-import { notFound, redirect } from "next/navigation"
-import Article from "./article"
+import { notFound } from "next/navigation"
 
 export const dynamic = "force-static"
 
@@ -17,19 +15,10 @@ export async function generateMetadata({
   }
 
   const { chatId } = await params
-  const supabase = await createClient()
 
-  if (!supabase) {
-    return notFound()
-  }
-
-  const { data: chat } = await supabase
-    .from("chats")
-    .select("title, created_at")
-    .eq("id", chatId)
-    .single()
-
-  const title = chat?.title || "Chat"
+  // In local-only mode, we can't access the database for metadata
+  // Return default metadata
+  const title = "Chat"
   const description = "A chat in Zola"
 
   return {
@@ -49,48 +38,12 @@ export async function generateMetadata({
   }
 }
 
-export default async function ShareChat({
-  params,
-}: {
-  params: Promise<{ chatId: string }>
-}) {
+export default async function ShareChat() {
+  // In local-only mode, chat sharing is not available
   if (!isSupabaseEnabled) {
     return notFound()
   }
 
-  const { chatId } = await params
-  const supabase = await createClient()
-
-  if (!supabase) {
-    return notFound()
-  }
-
-  const { data: chatData, error: chatError } = await supabase
-    .from("chats")
-    .select("id, title, created_at")
-    .eq("id", chatId)
-    .single()
-
-  if (chatError || !chatData) {
-    redirect("/")
-  }
-
-  const { data: messagesData, error: messagesError } = await supabase
-    .from("messages")
-    .select("*")
-    .eq("chat_id", chatId)
-    .order("created_at", { ascending: true })
-
-  if (messagesError || !messagesData) {
-    redirect("/")
-  }
-
-  return (
-    <Article
-      messages={messagesData}
-      date={chatData.created_at || ""}
-      title={chatData.title || ""}
-      subtitle={"A conversation in Zola"}
-    />
-  )
+  // This page is not accessible in local-only mode
+  return notFound()
 }
