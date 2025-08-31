@@ -255,12 +255,11 @@ export function MultiChat() {
       if (!chatIdToUse) {
         console.log("multi-chat handleSubmit: Creating new chat...")
         const createdChat = await createNewChat(
-          prompt,
-          selectedModelIds[0],
-          !!user?.id,
+          prompt, // title
+          selectedModelIds[0] || undefined, // model
+          !!user?.id, // isAuthenticated
           undefined, // systemPrompt
-          undefined, // projectId
-          uid // pass the userId
+          undefined // projectId
         )
         console.log(
           "multi-chat handleSubmit: Created chat result:",

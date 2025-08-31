@@ -98,7 +98,10 @@ export function ProjectView({ projectId }: ProjectViewProps) {
     id: `project-${projectId}-${currentChatId}`,
     api: API_ROUTE_CHAT,
     initialMessages: [],
-    onFinish: cacheAndAddMessage,
+    onFinish: (message) => {
+      // Adapter function to match the new useChat onFinish signature
+      cacheAndAddMessage(message, currentChatId || undefined)
+    },
     onError: handleError,
   })
 
