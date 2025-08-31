@@ -31,9 +31,10 @@ import { useChatPreview } from "@/lib/hooks/use-chat-preview"
 import { useUserPreferences } from "@/lib/user-preference-store/provider"
 import { cn } from "@/lib/utils"
 import { Check, PencilSimple, TrashSimple, X } from "@phosphor-icons/react"
+import { useCommandState } from "cmdk"
 import { Pin, PinOff } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { useCallback, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { ChatPreviewPanel } from "./chat-preview-panel"
 import { CommandFooter } from "./command-footer"
 import { formatDate, groupChatsByDate } from "./utils"
@@ -298,6 +299,7 @@ type CustomCommandDialogProps = React.ComponentProps<typeof Dialog> & {
   description?: string
   className?: string
   onOpenChange?: (open: boolean) => void
+  onValueChange?: (value: string) => void
 }
 
 // Custom CommandDialog with className support
@@ -307,6 +309,7 @@ function CustomCommandDialog({
   children,
   className,
   onOpenChange,
+  onValueChange,
   open,
   ...props
 }: CustomCommandDialogProps) {
@@ -323,6 +326,7 @@ function CustomCommandDialog({
           className="[&_[cmdk-group-heading]]:text-muted-foreground border-none **:data-[slot=command-input-wrapper]:h-12 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group]]:px-2 [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5 [&_[cmdk-item]_svg]:border-none"
           data-testid="chat-history-panel"
           shouldFilter={false}
+          onValueChange={onValueChange}
         >
           {children}
         </Command>
@@ -481,7 +485,24 @@ export function CommandHistory({
   const { pinnedChats } = useChats()
 
   const activePreviewChatId =
-    hoveredChatId || (isPreviewPanelHovered ? hoveredChatId : null)
+    hoveredChatId ||
+    selectedChatId ||
+    (isPreviewPanelHovered ? hoveredChatId : null)
+
+  // Component to track keyboard selection changes
+  const KeyboardSelectionTracker = () => {
+    const value = useCommandState((state) => state.value)
+    const search = useCommandState((state) => state.search)
+
+    useEffect(() => {
+      if (value && preferences.showConversationPreviews && value !== search) {
+        setSelectedChatId(value)
+        fetchPreview(value)
+      }
+    }, [value, search])
+
+    return null
+  }
 
   const renderChatItem = useCallback(
     (chat: Chats) => {
@@ -496,6 +517,12 @@ export function CommandHistory({
           key={chat.id}
           data-testid="chat-item"
           onSelect={() => {
+            console.log(
+              "CommandHistory: onSelect triggered for chat:",
+              chat.id,
+              "showConversationPreviews:",
+              preferences.showConversationPreviews
+            )
             if (preferences.showConversationPreviews) {
               console.log("CommandHistory: Selected chat for preview:", chat.id)
               setSelectedChatId(chat.id)
@@ -603,6 +630,7 @@ export function CommandHistory({
           value={searchQuery}
           onValueChange={(value) => setSearchQuery(value)}
         />
+        <KeyboardSelectionTracker />
 
         <div className="grid grid-cols-5">
           <div
