@@ -1,6 +1,7 @@
 "use client"
 
 import { toast } from "@/components/ui/toast"
+import { useUser } from "@/lib/user-store/provider"
 import { createContext, useContext, useEffect, useMemo, useState } from "react"
 import { MODEL_DEFAULT, SYSTEM_PROMPT_DEFAULT } from "../../config"
 import type { Chats } from "../types"
@@ -25,7 +26,6 @@ interface ChatsContextType {
   ) => Promise<void>
   setChats: React.Dispatch<React.SetStateAction<Chats[]>>
   createNewChat: (
-    userId: string,
     title?: string,
     model?: string,
     isAuthenticated?: boolean,
@@ -47,18 +47,13 @@ export function useChats() {
   return context
 }
 
-export function ChatsProvider({
-  userId,
-  children,
-}: {
-  userId?: string
-  children: React.ReactNode
-}) {
+export function ChatsProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useUser()
   const [isLoading, setIsLoading] = useState(true)
   const [chats, setChats] = useState<Chats[]>([])
 
   useEffect(() => {
-    if (!userId) return
+    if (!user?.id) return
 
     const load = async () => {
       setIsLoading(true)
@@ -66,7 +61,7 @@ export function ChatsProvider({
       setChats(cached)
 
       try {
-        const fresh = await fetchAndCacheChats(userId)
+        const fresh = await fetchAndCacheChats(user.id)
         setChats(fresh)
       } finally {
         setIsLoading(false)
@@ -74,12 +69,12 @@ export function ChatsProvider({
     }
 
     load()
-  }, [userId])
+  }, [user?.id])
 
   const refresh = async () => {
-    if (!userId) return
+    if (!user?.id) return
 
-    const fresh = await fetchAndCacheChats(userId)
+    const fresh = await fetchAndCacheChats(user.id)
     setChats(fresh)
   }
 
@@ -118,14 +113,13 @@ export function ChatsProvider({
   }
 
   const createNewChat = async (
-    userId: string,
     title?: string,
     model?: string,
     isAuthenticated?: boolean,
     systemPrompt?: string,
     projectId?: string
   ) => {
-    if (!userId) return
+    if (!user?.id) return
     const prev = [...chats]
 
     const optimisticId = `optimistic-${Date.now().toString()}`
@@ -135,7 +129,7 @@ export function ChatsProvider({
       created_at: new Date().toISOString(),
       model: model || MODEL_DEFAULT,
       system_prompt: systemPrompt || SYSTEM_PROMPT_DEFAULT,
-      user_id: userId,
+      user_id: user.id,
       public: true,
       updated_at: new Date().toISOString(),
       project_id: null,
@@ -146,7 +140,7 @@ export function ChatsProvider({
 
     try {
       const newChat = await createNewChatFromDb(
-        userId,
+        user.id,
         title,
         model,
         isAuthenticated,

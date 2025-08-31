@@ -1,38 +1,20 @@
-import { createClient } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient()
-
-    if (!supabase) {
-      return new Response(
-        JSON.stringify({ error: "Supabase not available in this deployment." }),
-        { status: 200 }
-      )
-    }
-
-    const { data: authData } = await supabase.auth.getUser()
-
-    if (!authData?.user?.id) {
-      return new Response(JSON.stringify({ error: "Missing userId" }), {
-        status: 400,
-      })
-    }
-
-    const userId = authData.user.id
-
+    // For local storage mode, we don't support server-side project creation
+    // Projects would be managed client-side
     const { name } = await request.json()
 
-    const { data, error } = await supabase
-      .from("projects")
-      .insert({ name, user_id: userId })
-      .select()
-      .single()
+    // Return a mock project for compatibility
+    const mockProject = {
+      id: Date.now().toString(),
+      name,
+      user_id: "local-user",
+      created_at: new Date().toISOString(),
+    }
 
-    if (error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    return NextResponse.json(data)
+    return NextResponse.json(mockProject)
   } catch (err: unknown) {
     console.error("Error in projects endpoint:", err)
 
@@ -46,27 +28,15 @@ export async function POST(request: Request) {
 }
 
 export async function GET() {
-  const supabase = await createClient()
-
-  if (!supabase) {
-    return new Response(
-      JSON.stringify({ error: "Supabase not available in this deployment." }),
-      { status: 200 }
+  try {
+    // For local storage mode, return empty projects array
+    // Projects would be managed client-side
+    return NextResponse.json([])
+  } catch (err: unknown) {
+    console.error("Error in projects GET endpoint:", err)
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
     )
   }
-
-  const { data: authData } = await supabase.auth.getUser()
-
-  const userId = authData?.user?.id
-  if (!userId)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-
-  const { data, error } = await supabase
-    .from("projects")
-    .select("*")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: true })
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json(data)
 }

@@ -35,7 +35,6 @@ export type CodeBlockCodeProps = {
 function CodeBlockCode({
   code,
   language = "tsx",
-  theme = "github-light",
   className,
   ...props
 }: CodeBlockCodeProps) {
@@ -44,11 +43,22 @@ function CodeBlockCode({
 
   useEffect(() => {
     async function highlight() {
-      const html = await codeToHtml(code, {
-        lang: language,
-        theme: appTheme === "dark" ? "github-dark" : "github-light",
-      })
-      setHighlightedHtml(html)
+      // Safety check: ensure code is a valid string
+      if (!code || typeof code !== "string") {
+        setHighlightedHtml(null)
+        return
+      }
+
+      try {
+        const html = await codeToHtml(code, {
+          lang: language,
+          theme: appTheme === "dark" ? "github-dark" : "github-light",
+        })
+        setHighlightedHtml(html)
+      } catch (error) {
+        console.warn("Failed to highlight code:", error)
+        setHighlightedHtml(null)
+      }
     }
     highlight()
   }, [code, language, appTheme])
@@ -59,6 +69,8 @@ function CodeBlockCode({
   )
 
   // SSR fallback: render plain code if not hydrated yet
+  const safeCode = code && typeof code === "string" ? code : ""
+
   return highlightedHtml ? (
     <div
       className={classNames}
@@ -68,7 +80,7 @@ function CodeBlockCode({
   ) : (
     <div className={classNames} {...props}>
       <pre>
-        <code>{code}</code>
+        <code>{safeCode}</code>
       </pre>
     </div>
   )

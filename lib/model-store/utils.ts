@@ -18,11 +18,11 @@ export function filterAndSortModels(
   return models
     .filter((model) => !isModelHidden(model.id))
     .filter((model) => {
-      // If user has favorite models, only show favorites
+      // Only filter by favorites if we have actual favorite models
       if (favoriteModels && favoriteModels.length > 0) {
         return favoriteModels.includes(model.id)
       }
-      // If no favorites, show all models
+      // If no favorites set, show all models
       return true
     })
     .filter((model) =>

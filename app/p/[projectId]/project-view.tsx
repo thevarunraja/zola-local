@@ -110,62 +110,58 @@ export function ProjectView({ projectId }: ProjectViewProps) {
   })
 
   // Simplified ensureChatExists for authenticated project context
-  const ensureChatExists = useCallback(
-    async (userId: string) => {
-      // If we already have a current chat ID, return it
-      if (currentChatId) {
-        return currentChatId
-      }
-
-      // Only create a new chat if we haven't started one yet
-      if (messages.length === 0) {
-        try {
-          const newChat = await createNewChat(
-            userId,
-            input,
-            selectedModel,
-            true, // Always authenticated in this context
-            SYSTEM_PROMPT_DEFAULT,
-            projectId
-          )
-
-          if (!newChat) return null
-
-          setCurrentChatId(newChat.id)
-          // Redirect to the chat page as expected
-          window.history.pushState(null, "", `/c/${newChat.id}`)
-          return newChat.id
-        } catch (err: unknown) {
-          let errorMessage = "Something went wrong."
-          try {
-            const errorObj = err as { message?: string }
-            if (errorObj.message) {
-              const parsed = JSON.parse(errorObj.message)
-              errorMessage = parsed.error || errorMessage
-            }
-          } catch {
-            const errorObj = err as { message?: string }
-            errorMessage = errorObj.message || errorMessage
-          }
-          toast({
-            title: errorMessage,
-            status: "error",
-          })
-          return null
-        }
-      }
-
+  const ensureChatExists = useCallback(async () => {
+    // If we already have a current chat ID, return it
+    if (currentChatId) {
       return currentChatId
-    },
-    [
-      currentChatId,
-      messages.length,
-      createNewChat,
-      input,
-      selectedModel,
-      projectId,
-    ]
-  )
+    }
+
+    // Only create a new chat if we haven't started one yet
+    if (messages.length === 0) {
+      try {
+        const newChat = await createNewChat(
+          input,
+          selectedModel,
+          true, // Always authenticated in this context
+          SYSTEM_PROMPT_DEFAULT,
+          projectId
+        )
+
+        if (!newChat) return null
+
+        setCurrentChatId(newChat.id)
+        // Redirect to the chat page as expected
+        window.history.pushState(null, "", `/c/${newChat.id}`)
+        return newChat.id
+      } catch (err: unknown) {
+        let errorMessage = "Something went wrong."
+        try {
+          const errorObj = err as { message?: string }
+          if (errorObj.message) {
+            const parsed = JSON.parse(errorObj.message)
+            errorMessage = parsed.error || errorMessage
+          }
+        } catch {
+          const errorObj = err as { message?: string }
+          errorMessage = errorObj.message || errorMessage
+        }
+        toast({
+          title: errorMessage,
+          status: "error",
+        })
+        return null
+      }
+    }
+
+    return currentChatId
+  }, [
+    currentChatId,
+    messages.length,
+    createNewChat,
+    input,
+    selectedModel,
+    projectId,
+  ])
 
   const { handleDelete, handleEdit } = useChatOperations({
     isAuthenticated: true, // Always authenticated in project context
@@ -174,7 +170,6 @@ export function ProjectView({ projectId }: ProjectViewProps) {
     selectedModel,
     systemPrompt: SYSTEM_PROMPT_DEFAULT,
     createNewChat,
-    setHasDialogAuth: () => {}, // Not used in project context
     setMessages,
     setInput,
   })
@@ -215,7 +210,7 @@ export function ProjectView({ projectId }: ProjectViewProps) {
     setFiles([])
 
     try {
-      const currentChatId = await ensureChatExists(user.id)
+      const currentChatId = await ensureChatExists()
       if (!currentChatId) {
         setMessages((prev) => prev.filter((msg) => msg.id !== optimisticId))
         cleanupOptimisticAttachments(optimisticMessage.experimental_attachments)

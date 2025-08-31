@@ -1,6 +1,5 @@
 "use client"
 
-import { PopoverContentAuth } from "@/app/components/chat-input/popover-content-auth"
 import { useBreakpoint } from "@/app/hooks/use-breakpoint"
 import { useKeyShortcut } from "@/app/hooks/use-key-shortcut"
 import { Button } from "@/components/ui/button"
@@ -18,7 +17,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
-import { Popover, PopoverTrigger } from "@/components/ui/popover"
 import {
   Tooltip,
   TooltipContent,
@@ -43,14 +41,12 @@ type ModelSelectorProps = {
   selectedModelId: string
   setSelectedModelId: (modelId: string) => void
   className?: string
-  isUserAuthenticated?: boolean
 }
 
 export function ModelSelector({
   selectedModelId,
   setSelectedModelId,
   className,
-  isUserAuthenticated = true,
 }: ModelSelectorProps) {
   const { models, isLoading: isLoadingModels, favoriteModels } = useModel()
   const { isModelHidden } = useUserPreferences()
@@ -152,37 +148,6 @@ export function ModelSelector({
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     e.stopPropagation()
     setSearchQuery(e.target.value)
-  }
-
-  // If user is not authenticated, show the auth popover
-  if (!isUserAuthenticated) {
-    return (
-      <Popover>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <PopoverTrigger asChild>
-              <Button
-                size="sm"
-                variant="secondary"
-                className={cn(
-                  "border-border dark:bg-secondary text-accent-foreground h-9 w-auto border bg-transparent",
-                  className
-                )}
-                type="button"
-              >
-                {currentProvider?.icon && (
-                  <currentProvider.icon className="size-5" />
-                )}
-                {currentModel?.name}
-                <CaretDownIcon className="size-4" />
-              </Button>
-            </PopoverTrigger>
-          </TooltipTrigger>
-          <TooltipContent>Select a model</TooltipContent>
-        </Tooltip>
-        <PopoverContentAuth />
-      </Popover>
-    )
   }
 
   if (isMobile) {

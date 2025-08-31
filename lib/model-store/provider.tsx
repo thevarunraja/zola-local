@@ -2,6 +2,7 @@
 
 import { fetchClient } from "@/lib/fetch"
 import { ModelConfig } from "@/lib/models/types"
+import { LocalStorageManager } from "@/lib/storage/local-storage"
 import {
   createContext,
   useCallback,
@@ -63,11 +64,18 @@ export function ModelProvider({ children }: { children: React.ReactNode }) {
 
   const fetchUserKeyStatus = useCallback(async () => {
     try {
-      const response = await fetchClient("/api/user-key-status")
-      if (response.ok) {
-        const data = await response.json()
-        setUserKeyStatus(data)
+      // For local storage mode, check if API keys are stored locally
+      const apiKeys = LocalStorageManager.getApiKeys()
+      const keyStatus = {
+        openrouter: !!apiKeys.openrouter,
+        openai: !!apiKeys.openai,
+        mistral: !!apiKeys.mistral,
+        google: !!apiKeys.google,
+        perplexity: !!apiKeys.perplexity,
+        xai: !!apiKeys.xai,
+        anthropic: !!apiKeys.anthropic,
       }
+      setUserKeyStatus(keyStatus)
     } catch (error) {
       console.error("Failed to fetch user key status:", error)
       // Set default values on error
@@ -85,13 +93,10 @@ export function ModelProvider({ children }: { children: React.ReactNode }) {
 
   const fetchFavoriteModels = useCallback(async () => {
     try {
-      const response = await fetchClient(
-        "/api/user-preferences/favorite-models"
-      )
-      if (response.ok) {
-        const data = await response.json()
-        setFavoriteModels(data.favorite_models || [])
-      }
+      // For local storage mode, get favorite models from LocalStorageManager
+      const user = LocalStorageManager.getUser()
+      const favoriteModels = user?.favorite_models || []
+      setFavoriteModels(favoriteModels)
     } catch (error) {
       console.error("Failed to fetch favorite models:", error)
       setFavoriteModels([])

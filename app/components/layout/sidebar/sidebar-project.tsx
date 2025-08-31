@@ -23,8 +23,13 @@ export function SidebarProject() {
       if (!response.ok) {
         throw new Error("Failed to fetch projects")
       }
-      return response.json()
+      const data = await response.json()
+      // Ensure we always return an array
+      return Array.isArray(data) ? data : []
     },
+    // Add error handling to prevent crashes
+    retry: false,
+    refetchOnWindowFocus: false,
   })
 
   return (
@@ -42,9 +47,10 @@ export function SidebarProject() {
 
       {isLoading ? null : (
         <div className="space-y-1">
-          {projects.map((project) => (
-            <SidebarProjectItem key={project.id} project={project} />
-          ))}
+          {Array.isArray(projects) &&
+            projects.map((project) => (
+              <SidebarProjectItem key={project.id} project={project} />
+            ))}
         </div>
       )}
 

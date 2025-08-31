@@ -193,7 +193,6 @@ export function ChatInput({
               <ModelSelector
                 selectedModelId={selectedModel}
                 setSelectedModelId={onSelectModel}
-                isUserAuthenticated={isUserAuthenticated}
                 className="rounded-full"
               />
               {hasSearchSupport ? (

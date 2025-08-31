@@ -2,11 +2,9 @@
 "use client"
 
 import {
-  fetchUserProfile,
-  signOutUser,
-  subscribeToUserUpdates,
-  updateUserProfile,
-} from "@/lib/user-store/api"
+  LocalStorageManager,
+  type LocalUser,
+} from "@/lib/storage/local-storage"
 import type { UserProfile } from "@/lib/user/types"
 import { createContext, useContext, useEffect, useState } from "react"
 
@@ -20,23 +18,43 @@ type UserContextType = {
 
 const UserContext = createContext<UserContextType | undefined>(undefined)
 
+// Convert LocalUser to UserProfile format
+function convertToUserProfile(localUser: LocalUser): UserProfile {
+  return {
+    id: localUser.id,
+    email: localUser.email,
+    display_name: localUser.display_name || "Local User",
+    profile_image: localUser.profile_image || "",
+    anonymous: localUser.anonymous,
+    created_at: localUser.created_at,
+    premium: localUser.premium,
+    favorite_models: localUser.favorite_models,
+    message_count: null,
+    daily_message_count: null,
+    daily_reset: null,
+    last_active_at: null,
+    daily_pro_message_count: null,
+    daily_pro_reset: null,
+    system_prompt: null,
+    preferences: localUser.preferences,
+  }
+}
+
 export function UserProvider({
   children,
-  initialUser,
 }: {
   children: React.ReactNode
-  initialUser: UserProfile | null
+  initialUser?: UserProfile | null
 }) {
-  const [user, setUser] = useState<UserProfile | null>(initialUser)
-  const [isLoading, setIsLoading] = useState(false)
+  // Start with null to avoid hydration mismatch
+  const [user, setUser] = useState<UserProfile | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
   const refreshUser = async () => {
-    if (!user?.id) return
-
     setIsLoading(true)
     try {
-      const updatedUser = await fetchUserProfile(user.id)
-      if (updatedUser) setUser(updatedUser)
+      const localUser = LocalStorageManager.getOrCreateUser()
+      setUser(convertToUserProfile(localUser))
     } finally {
       setIsLoading(false)
     }
@@ -47,9 +65,20 @@ export function UserProvider({
 
     setIsLoading(true)
     try {
-      const success = await updateUserProfile(user.id, updates)
-      if (success) {
-        setUser((prev) => (prev ? { ...prev, ...updates } : null))
+      const currentLocalUser = LocalStorageManager.getUser()
+      if (currentLocalUser) {
+        // Create updated local user with proper type conversion
+        const updatedLocalUser: LocalUser = {
+          ...currentLocalUser,
+          display_name: updates.display_name ?? currentLocalUser.display_name,
+          profile_image:
+            updates.profile_image ?? currentLocalUser.profile_image,
+          favorite_models:
+            updates.favorite_models ?? currentLocalUser.favorite_models,
+          preferences: updates.preferences ?? currentLocalUser.preferences,
+        }
+        LocalStorageManager.setUser(updatedLocalUser)
+        setUser(convertToUserProfile(updatedLocalUser))
       }
     } finally {
       setIsLoading(false)
@@ -59,25 +88,29 @@ export function UserProvider({
   const signOut = async () => {
     setIsLoading(true)
     try {
-      const success = await signOutUser()
-      if (success) setUser(null)
+      LocalStorageManager.clearAll()
+      // Create a new user immediately after clearing
+      const newUser = LocalStorageManager.createUser()
+      setUser(convertToUserProfile(newUser))
     } finally {
       setIsLoading(false)
     }
   }
 
-  // Set up realtime subscription for user data changes
+  // Initialize user on mount
   useEffect(() => {
-    if (!user?.id) return
-
-    const unsubscribe = subscribeToUserUpdates(user.id, (newData) => {
-      setUser((prev) => (prev ? { ...prev, ...newData } : null))
-    })
-
-    return () => {
-      unsubscribe()
+    const initializeUser = () => {
+      setIsLoading(true)
+      try {
+        const localUser = LocalStorageManager.getOrCreateUser()
+        setUser(convertToUserProfile(localUser))
+      } finally {
+        setIsLoading(false)
+      }
     }
-  }, [user?.id])
+
+    initializeUser()
+  }, [])
 
   return (
     <UserContext.Provider

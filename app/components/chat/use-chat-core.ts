@@ -52,7 +52,6 @@ export function useChatCore({
 }: UseChatCoreProps) {
   // State management
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [hasDialogAuth, setHasDialogAuth] = useState(false)
   const [enableSearch, setEnableSearch] = useState(false)
 
   // Refs and derived state
@@ -360,8 +359,6 @@ export function useChatCore({
     // Component state
     isSubmitting,
     setIsSubmitting,
-    hasDialogAuth,
-    setHasDialogAuth,
     enableSearch,
     setEnableSearch,
 

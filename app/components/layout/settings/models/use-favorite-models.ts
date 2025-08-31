@@ -1,14 +1,10 @@
 import { toast } from "@/components/ui/toast"
-import { fetchClient } from "@/lib/fetch"
 import { useModel } from "@/lib/model-store/provider"
+import { LocalStorageManager } from "@/lib/storage/local-storage"
 import { useUser } from "@/lib/user-store/provider"
 import { debounce } from "@/lib/utils"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useCallback, useRef } from "react"
-
-type FavoriteModelsResponse = {
-  favorite_models: string[]
-}
 
 export function useFavoriteModels() {
   const queryClient = useQueryClient()
@@ -21,7 +17,7 @@ export function useFavoriteModels() {
     ? initialFavoriteModels
     : []
 
-  // Query to fetch favorite models
+  // Query to fetch favorite models from localStorage
   const {
     data: favoriteModels = safeInitialData,
     isLoading,
@@ -29,50 +25,37 @@ export function useFavoriteModels() {
   } = useQuery<string[]>({
     queryKey: ["favorite-models"],
     queryFn: async () => {
-      const response = await fetchClient(
-        "/api/user-preferences/favorite-models"
-      )
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch favorite models")
+      // For local storage mode, get from LocalStorageManager
+      try {
+        const user = LocalStorageManager.getUser()
+        return user?.favorite_models || []
+      } catch (error) {
+        console.error("Failed to get favoriteModels from localStorage:", error)
+        return []
       }
-
-      const data: FavoriteModelsResponse = await response.json()
-      return data.favorite_models || []
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
     retry: 1,
     initialData: safeInitialData,
   })
 
-  // Mutation to update favorite models
+  // Mutation to update favorite models in localStorage
   const updateFavoriteModelsMutation = useMutation({
     mutationFn: async (favoriteModels: string[]) => {
-      const response = await fetchClient(
-        "/api/user-preferences/favorite-models",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
+      try {
+        // Update user data with new favorite models
+        const currentUser = LocalStorageManager.getUser()
+        if (currentUser) {
+          const updatedUser = {
+            ...currentUser,
             favorite_models: favoriteModels,
-          }),
+          }
+          LocalStorageManager.setUser(updatedUser)
         }
-      )
-
-      if (!response.ok) {
-        const errorData = await response
-          .json()
-          .catch(() => ({ error: "Unknown error" }))
-        throw new Error(
-          errorData.error ||
-            `Failed to save favorite models: ${response.statusText}`
-        )
+        return { success: true, favorite_models: favoriteModels }
+      } catch {
+        throw new Error("Failed to save favorite models to local storage")
       }
-
-      const result = await response.json()
-      return result
     },
     onMutate: async (newFavoriteModels) => {
       // Cancel any outgoing refetches

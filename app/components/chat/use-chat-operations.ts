@@ -12,13 +12,12 @@ type UseChatOperationsProps = {
   selectedModel: string
   systemPrompt: string
   createNewChat: (
-    userId: string,
     title?: string,
     model?: string,
     isAuthenticated?: boolean,
-    systemPrompt?: string
+    systemPrompt?: string,
+    projectId?: string
   ) => Promise<Chats | undefined>
-  setHasDialogAuth: (value: boolean) => void
   setMessages: (
     messages: Message[] | ((messages: Message[]) => Message[])
   ) => void
@@ -32,18 +31,12 @@ export function useChatOperations({
   selectedModel,
   systemPrompt,
   createNewChat,
-  setHasDialogAuth,
   setMessages,
 }: UseChatOperationsProps) {
   // Chat utilities
   const checkLimitsAndNotify = async (uid: string): Promise<boolean> => {
     try {
       const rateData = await checkRateLimits(uid, isAuthenticated)
-
-      if (rateData.remaining === 0 && !isAuthenticated) {
-        setHasDialogAuth(true)
-        return false
-      }
 
       if (rateData.remaining === REMAINING_QUERY_ALERT_THRESHOLD) {
         toast({
@@ -79,7 +72,6 @@ export function useChatOperations({
     if (messages.length === 0) {
       try {
         const newChat = await createNewChat(
-          userId,
           input,
           selectedModel,
           isAuthenticated,
