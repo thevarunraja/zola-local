@@ -66,32 +66,63 @@ function MessageBubble({ content, role }: MessageBubbleProps) {
           markdown={true}
           components={{
             h1: ({ children }) => (
-              <div className="mb-1 text-base font-semibold">{children}</div>
+              <div className="mb-2 text-lg font-bold">{children}</div>
             ),
             h2: ({ children }) => (
-              <div className="mb-1 text-sm font-medium">{children}</div>
+              <div className="mb-2 text-base font-semibold">{children}</div>
             ),
             h3: ({ children }) => (
-              <div className="mb-1 text-sm font-medium">{children}</div>
+              <div className="mb-1 text-sm font-semibold">{children}</div>
             ),
             h4: ({ children }) => (
-              <div className="text-sm font-medium">{children}</div>
+              <div className="mb-1 text-sm font-medium">{children}</div>
             ),
             h5: ({ children }) => (
-              <div className="text-sm font-medium">{children}</div>
+              <div className="mb-1 text-xs font-medium">{children}</div>
             ),
             h6: ({ children }) => (
-              <div className="text-sm font-medium">{children}</div>
+              <div className="mb-1 text-xs font-medium">{children}</div>
             ),
-            p: ({ children }) => <div className="mb-1">{children}</div>,
-            li: ({ children }) => <div>• {children}</div>,
-            ul: ({ children }) => <div className="space-y-0.5">{children}</div>,
-            ol: ({ children }) => <div className="space-y-0.5">{children}</div>,
-            code: ({ children }) => (
-              <code className="bg-muted rounded px-1 text-xs">{children}</code>
+            p: ({ children }) => <p className="mb-2">{children}</p>,
+            strong: ({ children }) => (
+              <strong className="text-foreground font-semibold">
+                {children}
+              </strong>
             ),
+            em: ({ children }) => (
+              <em className="text-foreground italic">{children}</em>
+            ),
+            li: ({ children }) => (
+              <li className="ml-0 list-item">{children}</li>
+            ),
+            ul: ({ children }) => (
+              <ul className="mb-2 list-inside list-disc space-y-1">
+                {children}
+              </ul>
+            ),
+            ol: ({ children }) => (
+              <ol className="mb-2 list-inside list-decimal space-y-1">
+                {children}
+              </ol>
+            ),
+            code: ({ children, className }) => {
+              // Check if it's an inline code block
+              if (!className?.includes("language-")) {
+                return (
+                  <code className="bg-muted rounded px-1 py-0.5 font-mono text-xs">
+                    {children}
+                  </code>
+                )
+              }
+              // For code blocks with language, preserve formatting
+              return (
+                <code className="bg-muted block overflow-x-auto rounded p-2 font-mono text-xs whitespace-pre">
+                  {children}
+                </code>
+              )
+            },
             pre: ({ children }) => (
-              <div className="bg-muted overflow-x-auto rounded p-2 text-xs">
+              <div className="bg-muted mb-2 overflow-x-auto rounded p-2 font-mono text-xs whitespace-pre-wrap">
                 {children}
               </div>
             ),
