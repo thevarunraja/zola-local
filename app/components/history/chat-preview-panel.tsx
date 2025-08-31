@@ -1,8 +1,8 @@
 import { MessageContent } from "@/components/prompt-kit/message"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { AlertCircle, Loader2, RefreshCw } from "lucide-react"
-import { useLayoutEffect, useRef, useState } from "react"
+import { AlertCircle, Loader2, MessageSquare, RefreshCw } from "lucide-react"
+import { useCallback, useLayoutEffect, useRef, useState } from "react"
 
 type ChatPreviewPanelProps = {
   chatId: string | null
@@ -191,17 +191,24 @@ export function ChatPreviewPanel({
   const shouldFetch = chatId && chatId !== lastChatId
 
   if (shouldFetch && onFetchPreview) {
+    console.log("ChatPreviewPanel: Fetching preview for new chatId:", chatId)
     setLastChatId(chatId)
     setRetryCount(0)
     onFetchPreview(chatId)
   }
 
-  const handleRetry = () => {
+  const handleRetry = useCallback(() => {
     if (chatId && onFetchPreview && retryCount < maxRetries) {
+      console.log(
+        "ChatPreviewPanel: Retrying fetch for chatId:",
+        chatId,
+        "attempt:",
+        retryCount + 1
+      )
       setRetryCount((prev) => prev + 1)
       onFetchPreview(chatId)
     }
-  }
+  }, [chatId, onFetchPreview, retryCount, maxRetries])
 
   // Immediately scroll to bottom when chatId changes or messages load
   useLayoutEffect(() => {
@@ -217,12 +224,20 @@ export function ChatPreviewPanel({
 
   return (
     <div
-      className="bg-background col-span-3 border-l"
+      className="border-border bg-background col-span-3 flex h-[480px] flex-col rounded-lg border border-l"
+      data-testid="chat-preview-panel"
       onMouseEnter={() => onHover?.(true)}
       onMouseLeave={() => onHover?.(false)}
       key={chatId}
     >
-      <div className="h-[480px]">
+      <div className="border-border flex items-center justify-between border-b px-4 py-3">
+        <div className="flex items-center gap-2">
+          <MessageSquare className="h-4 w-4" />
+          <span className="text-sm font-medium">Conversation Preview</span>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-hidden">
         {!chatId && <DefaultState />}
         {chatId && isLoading && <LoadingState />}
         {chatId && error && !isLoading && (
@@ -243,12 +258,13 @@ export function ChatPreviewPanel({
                 </div>
               </div>
               {messages.map((message) => (
-                <MessageBubble
-                  key={message.id}
-                  content={message.content}
-                  role={message.role}
-                  timestamp={message.created_at}
-                />
+                <div key={message.id} data-testid="preview-message">
+                  <MessageBubble
+                    content={message.content}
+                    role={message.role}
+                    timestamp={message.created_at}
+                  />
+                </div>
               ))}
             </div>
             <div ref={bottomRef} />

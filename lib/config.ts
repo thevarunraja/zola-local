@@ -14,9 +14,10 @@ export const REMAINING_QUERY_ALERT_THRESHOLD = 2
 export const DAILY_FILE_UPLOAD_LIMIT = 5
 export const DAILY_LIMIT_PRO_MODELS = 500
 
-export const NON_AUTH_ALLOWED_MODELS = ["gpt-4.1-nano"]
+export const NON_AUTH_ALLOWED_MODELS = ["llama3.2:latest", "gpt-4.1-nano"]
 
 export const FREE_MODELS_IDS = [
+  "llama3.2:latest",
   "openrouter:deepseek/deepseek-r1:free",
   "openrouter:meta-llama/llama-3.3-8b-instruct:free",
   "pixtral-large-latest",
@@ -24,7 +25,7 @@ export const FREE_MODELS_IDS = [
   "gpt-4.1-nano",
 ]
 
-export const MODEL_DEFAULT = "gpt-4.1-nano"
+export const MODEL_DEFAULT = "llama3.2:latest"
 
 export const APP_NAME = "Zola"
 export const APP_DOMAIN = "https://zola.chat"

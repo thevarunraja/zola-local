@@ -13,7 +13,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 type UseChatCoreProps = {
   initialMessages: Message[]
   draftValue: string
-  cacheAndAddMessage: (message: Message) => void
+  cacheAndAddMessage: (message: Message, explicitChatId?: string) => void
   chatId: string | null
   user: UserProfile | null
   files: File[]
@@ -99,7 +99,16 @@ export function useChatCore({
     api: API_ROUTE_CHAT,
     initialMessages,
     initialInput: draftValue,
-    onFinish: cacheAndAddMessage,
+    onFinish: (message) => {
+      console.log("useChatCore: onFinish called with message:", message)
+      // We need to get the current chat ID since navigation might have happened
+      const currentUrl = window.location.pathname
+      const currentChatId = currentUrl.startsWith("/c/")
+        ? currentUrl.split("/c/")[1]
+        : chatId
+      console.log("useChatCore: onFinish using chatId:", currentChatId)
+      cacheAndAddMessage(message, currentChatId || undefined)
+    },
     onError: handleError,
   })
 
@@ -199,9 +208,22 @@ export function useChatCore({
       }
 
       handleSubmit(undefined, options)
+
+      // Create the actual user message to cache (without optimistic ID)
+      const actualUserMessage = {
+        ...optimisticMessage,
+        id: `user-${Date.now().toString()}`, // Give it a proper ID
+      }
+
+      console.log(
+        "useChatCore: About to cache user message:",
+        actualUserMessage
+      )
+      cacheAndAddMessage(actualUserMessage, currentChatId)
+
+      // Remove optimistic message after caching the real one
       setMessages((prev) => prev.filter((msg) => msg.id !== optimisticId))
       cleanupOptimisticAttachments(optimisticMessage.experimental_attachments)
-      cacheAndAddMessage(optimisticMessage)
       clearDraft()
 
       if (messages.length > 0) {
@@ -290,6 +312,19 @@ export function useChatCore({
           },
           options
         )
+
+        // Create the actual user message to cache
+        const actualUserMessage = {
+          ...optimisticMessage,
+          id: `user-suggestion-${Date.now().toString()}`, // Give it a proper ID
+        }
+
+        console.log(
+          "useChatCore: About to cache suggestion user message:",
+          actualUserMessage
+        )
+        cacheAndAddMessage(actualUserMessage, currentChatId)
+
         setMessages((prev) => prev.filter((msg) => msg.id !== optimisticId))
       } catch {
         setMessages((prev) => prev.filter((msg) => msg.id !== optimisticId))
@@ -307,6 +342,7 @@ export function useChatCore({
       isAuthenticated,
       setMessages,
       setIsSubmitting,
+      cacheAndAddMessage,
     ]
   )
 

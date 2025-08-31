@@ -31,7 +31,12 @@ export function useChatPreview(): UseChatPreviewReturn {
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const fetchPreview = useCallback(async (chatId: string) => {
-    if (!chatId) return
+    if (!chatId) {
+      console.log("useChatPreview: No chatId provided")
+      return
+    }
+
+    console.log("useChatPreview: Fetching preview for chatId:", chatId)
 
     // Clear any existing debounce timeout
     if (debounceTimeoutRef.current) {
@@ -56,7 +61,9 @@ export function useChatPreview(): UseChatPreviewReturn {
 
       try {
         // Check cache first
+        console.log("useChatPreview: Checking cache for chatId:", chatId)
         const cached = await getCachedMessages(chatId)
+        console.log("useChatPreview: Retrieved cached messages:", cached.length)
 
         if (cached && cached.length > 0) {
           // If we have cached messages, show them immediately
@@ -73,13 +80,24 @@ export function useChatPreview(): UseChatPreviewReturn {
                 created_at:
                   msg.createdAt?.toISOString() || new Date().toISOString(),
               }))
+            console.log(
+              "useChatPreview: Setting cached messages:",
+              cachedMessages.length
+            )
             setMessages(cachedMessages)
           }
         } else {
           // No cache, fetch from database
+          console.log(
+            "useChatPreview: No cached messages, fetching from database"
+          )
           setIsLoading(true)
 
           const fresh = await getMessagesFromDb(chatId)
+          console.log(
+            "useChatPreview: Retrieved fresh messages:",
+            fresh?.length || 0
+          )
           if (
             fresh &&
             currentRequestRef.current === chatId &&
@@ -97,6 +115,10 @@ export function useChatPreview(): UseChatPreviewReturn {
                 created_at:
                   msg.createdAt?.toISOString() || new Date().toISOString(),
               }))
+            console.log(
+              "useChatPreview: Setting fresh messages:",
+              freshMessages.length
+            )
             setMessages(freshMessages)
           }
         }
@@ -106,7 +128,7 @@ export function useChatPreview(): UseChatPreviewReturn {
           currentRequestRef.current === chatId &&
           !controller.signal.aborted
         ) {
-          console.error("Error fetching chat preview:", err)
+          console.error("useChatPreview: Error fetching chat preview:", err)
           setError(
             err instanceof Error ? err.message : "Unknown error occurred"
           )
@@ -125,6 +147,8 @@ export function useChatPreview(): UseChatPreviewReturn {
   }, [])
 
   const clearPreview = useCallback(() => {
+    console.log("useChatPreview: Clearing preview")
+
     // Clear debounce timeout
     if (debounceTimeoutRef.current) {
       clearTimeout(debounceTimeoutRef.current)

@@ -19,7 +19,10 @@ interface MessagesContextType {
   setMessages: React.Dispatch<React.SetStateAction<MessageAISDK[]>>
   refresh: () => Promise<void>
   saveAllMessages: (messages: MessageAISDK[]) => Promise<void>
-  cacheAndAddMessage: (message: MessageAISDK) => Promise<void>
+  cacheAndAddMessage: (
+    message: MessageAISDK,
+    explicitChatId?: string
+  ) => Promise<void>
   resetMessages: () => Promise<void>
   deleteMessages: () => Promise<void>
 }
@@ -38,23 +41,52 @@ export function MessagesProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
   const { chatId } = useChatSession()
 
+  console.log(
+    "MessagesProvider: Rendered with chatId:",
+    chatId,
+    "messages count:",
+    messages.length
+  )
+
   useEffect(() => {
+    console.log("MessagesProvider: useEffect for chatId change:", chatId)
     if (chatId === null) {
+      console.log("MessagesProvider: ChatId is null, clearing messages")
       setMessages([])
       setIsLoading(false)
+    } else {
+      console.log(
+        "MessagesProvider: ChatId changed to:",
+        chatId,
+        "setting loading to true"
+      )
+      setIsLoading(true)
     }
   }, [chatId])
 
   useEffect(() => {
-    if (!chatId) return
+    console.log(
+      "MessagesProvider: useEffect for loading messages, chatId:",
+      chatId
+    )
+    if (!chatId) {
+      console.log("MessagesProvider: No chatId, skipping load")
+      return
+    }
 
     const load = async () => {
+      console.log("MessagesProvider: Loading messages for chatId:", chatId)
       setIsLoading(true)
       const cached = await getCachedMessages(chatId)
+      console.log("MessagesProvider: Got cached messages:", cached.length)
       setMessages(cached)
 
       try {
         const fresh = await getMessagesFromDb(chatId)
+        console.log(
+          "MessagesProvider: Got fresh messages from DB:",
+          fresh.length
+        )
         setMessages(fresh)
         cacheMessages(chatId, fresh)
       } catch (error) {
@@ -78,13 +110,38 @@ export function MessagesProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const cacheAndAddMessage = async (message: MessageAISDK) => {
-    if (!chatId) return
+  const cacheAndAddMessage = async (
+    message: MessageAISDK,
+    explicitChatId?: string
+  ) => {
+    const targetChatId = explicitChatId || chatId
+    console.log(
+      "MessagesProvider: cacheAndAddMessage called with chatId:",
+      chatId,
+      "explicitChatId:",
+      explicitChatId,
+      "targetChatId:",
+      targetChatId,
+      "message:",
+      message
+    )
+    if (!targetChatId) {
+      console.log("MessagesProvider: No targetChatId, skipping cache")
+      return
+    }
+
+    console.log("cacheAndAddMessage: Adding message to chatId:", targetChatId)
+    console.log("cacheAndAddMessage: Message:", message)
 
     try {
-      setMessages((prev) => {
+      setMessages((prev: MessageAISDK[]) => {
         const updated = [...prev, message]
-        writeToIndexedDB("messages", { id: chatId, messages: updated })
+        console.log(
+          "cacheAndAddMessage: Updated messages array has",
+          updated.length,
+          "messages"
+        )
+        writeToIndexedDB("messages", { id: targetChatId, messages: updated })
         return updated
       })
     } catch {

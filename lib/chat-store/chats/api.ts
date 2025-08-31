@@ -152,6 +152,14 @@ export async function createNewChat(
   isAuthenticated?: boolean,
   projectId?: string
 ): Promise<Chats> {
+  console.log("createNewChat API: Starting with params:", {
+    userId,
+    title,
+    model,
+    isAuthenticated,
+    projectId,
+  })
+
   try {
     const payload: {
       userId: string
@@ -169,6 +177,11 @@ export async function createNewChat(
     if (projectId) {
       payload.projectId = projectId
     }
+
+    console.log(
+      "createNewChat API: Calling /api/create-chat with payload:",
+      payload
+    )
 
     const res = await fetchClient("/api/create-chat", {
       method: "POST",

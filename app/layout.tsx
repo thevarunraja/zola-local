@@ -56,8 +56,8 @@ export default async function RootLayout({
           <UserProvider>
             <ModelProvider>
               <ChatsProvider>
-                <MessagesProvider>
-                  <ChatSessionProvider>
+                <ChatSessionProvider>
+                  <MessagesProvider>
                     <UserPreferencesProvider>
                       <TooltipProvider
                         delayDuration={200}
@@ -76,8 +76,8 @@ export default async function RootLayout({
                         </ThemeProvider>
                       </TooltipProvider>
                     </UserPreferencesProvider>
-                  </ChatSessionProvider>
-                </MessagesProvider>
+                  </MessagesProvider>
+                </ChatSessionProvider>
               </ChatsProvider>
             </ModelProvider>
           </UserProvider>

@@ -242,12 +242,29 @@ export function MultiChat() {
 
       const message_group_id = crypto.randomUUID()
 
+      console.log("multi-chat handleSubmit: Current state", {
+        multiChatId,
+        chatId,
+        uid,
+        prompt,
+      })
+
       let chatIdToUse = multiChatId || chatId
+      console.log("multi-chat handleSubmit: chatIdToUse =", chatIdToUse)
+
       if (!chatIdToUse) {
+        console.log("multi-chat handleSubmit: Creating new chat...")
         const createdChat = await createNewChat(
           prompt,
           selectedModelIds[0],
-          !!user?.id
+          !!user?.id,
+          undefined, // systemPrompt
+          undefined, // projectId
+          uid // pass the userId
+        )
+        console.log(
+          "multi-chat handleSubmit: Created chat result:",
+          createdChat
         )
         if (!createdChat) {
           throw new Error("Failed to create chat")
@@ -255,6 +272,15 @@ export function MultiChat() {
         chatIdToUse = createdChat.id
         setMultiChatId(chatIdToUse)
         window.history.pushState(null, "", `/c/${chatIdToUse}`)
+        console.log(
+          "multi-chat handleSubmit: Updated URL to",
+          `/c/${chatIdToUse}`
+        )
+      } else {
+        console.log(
+          "multi-chat handleSubmit: Reusing existing chat ID:",
+          chatIdToUse
+        )
       }
 
       const selectedChats = modelChats.filter((chat) =>

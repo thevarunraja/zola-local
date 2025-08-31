@@ -16,9 +16,17 @@ export function ChatSessionProvider({
 }) {
   const pathname = usePathname()
   const chatId = useMemo(() => {
-    if (pathname?.startsWith("/c/")) return pathname.split("/c/")[1]
+    console.log("ChatSessionProvider: pathname:", pathname)
+    if (pathname?.startsWith("/c/")) {
+      const id = pathname.split("/c/")[1]
+      console.log("ChatSessionProvider: extracted chatId:", id)
+      return id
+    }
+    console.log("ChatSessionProvider: no chatId found")
     return null
   }, [pathname])
+
+  console.log("ChatSessionProvider: providing chatId:", chatId)
 
   return (
     <ChatSessionContext.Provider value={{ chatId }}>

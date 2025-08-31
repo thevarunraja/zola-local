@@ -126,9 +126,24 @@ export function ChatsProvider({ children }: { children: React.ReactNode }) {
     model?: string,
     isAuthenticated?: boolean,
     systemPrompt?: string,
-    projectId?: string
+    projectId?: string,
+    userId?: string // Add optional userId parameter
   ) => {
-    if (!user?.id) return
+    // Use provided userId or fall back to context user
+    const userIdToUse = userId || user?.id
+
+    if (!userIdToUse) {
+      console.warn("createNewChat: No user ID found, cannot create chat")
+      return
+    }
+
+    console.log("createNewChat: Creating chat with params:", {
+      title,
+      model,
+      isAuthenticated,
+      userId: userIdToUse,
+    })
+
     const prev = [...chats]
 
     const optimisticId = `optimistic-${Date.now().toString()}`
@@ -138,7 +153,7 @@ export function ChatsProvider({ children }: { children: React.ReactNode }) {
       created_at: new Date().toISOString(),
       model: model || MODEL_DEFAULT,
       system_prompt: systemPrompt || SYSTEM_PROMPT_DEFAULT,
-      user_id: user.id,
+      user_id: userIdToUse, // Use the determined user ID
       public: true,
       updated_at: new Date().toISOString(),
       project_id: null,
@@ -149,7 +164,7 @@ export function ChatsProvider({ children }: { children: React.ReactNode }) {
 
     try {
       const newChat = await createNewChatFromDb(
-        user.id,
+        userIdToUse, // Use the determined user ID
         title,
         model,
         isAuthenticated,

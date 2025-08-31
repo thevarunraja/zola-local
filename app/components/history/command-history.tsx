@@ -319,7 +319,10 @@ function CustomCommandDialog({
       <DialogContent
         className={cn("overflow-hidden border-none p-0", className)}
       >
-        <Command className="[&_[cmdk-group-heading]]:text-muted-foreground border-none **:data-[slot=command-input-wrapper]:h-12 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group]]:px-2 [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5 [&_[cmdk-item]_svg]:border-none">
+        <Command
+          className="[&_[cmdk-group-heading]]:text-muted-foreground border-none **:data-[slot=command-input-wrapper]:h-12 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group]]:px-2 [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5 [&_[cmdk-item]_svg]:border-none"
+          data-testid="chat-history-panel"
+        >
           {children}
         </Command>
       </DialogContent>
@@ -384,16 +387,24 @@ export function CommandHistory({
 
   const handleChatHover = useCallback(
     (chatId: string | null) => {
-      if (!preferences.showConversationPreviews) return
+      console.log("CommandHistory: handleChatHover called with:", chatId)
+      if (!preferences.showConversationPreviews) {
+        console.log("CommandHistory: Conversation previews disabled")
+        return
+      }
 
       setHoveredChatId(chatId)
 
       // Fetch preview when hovering over a chat
       if (chatId) {
+        console.log("CommandHistory: Fetching preview for chat:", chatId)
         fetchPreview(chatId)
+      } else {
+        console.log("CommandHistory: Clearing preview due to null chatId")
+        clearPreview()
       }
     },
-    [preferences.showConversationPreviews, fetchPreview]
+    [preferences.showConversationPreviews, fetchPreview, clearPreview]
   )
 
   const handlePreviewHover = useCallback(
@@ -482,9 +493,12 @@ export function CommandHistory({
       return (
         <CommandItem
           key={chat.id}
+          data-testid="chat-item"
           onSelect={() => {
             if (preferences.showConversationPreviews) {
+              console.log("CommandHistory: Selected chat for preview:", chat.id)
               setSelectedChatId(chat.id)
+              fetchPreview(chat.id)
             }
 
             if (isCurrentChatSession) {
@@ -507,7 +521,12 @@ export function CommandHistory({
           )}
           value={chat.id}
           onMouseEnter={() => {
+            console.log("CommandHistory: Mouse enter on chat:", chat.id)
             handleChatHover(chat.id)
+          }}
+          onMouseLeave={() => {
+            console.log("CommandHistory: Mouse leave on chat:", chat.id)
+            // Don't clear immediately on mouse leave - let the preview panel handle it
           }}
         >
           {editingId === chat.id ? (
@@ -552,6 +571,7 @@ export function CommandHistory({
       handleEdit,
       handleDelete,
       handleChatHover,
+      fetchPreview,
     ]
   )
 

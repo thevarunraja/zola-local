@@ -64,9 +64,14 @@ export function useChatOperations({
   }
 
   const ensureChatExists = async (userId: string, input: string) => {
+    // For guest users, always create a new chat for new conversations
+    // Only reuse existing chat if we're in an existing chat (chatId is present)
     if (!isAuthenticated) {
-      const storedGuestChatId = localStorage.getItem("guestChatId")
-      if (storedGuestChatId) return storedGuestChatId
+      if (chatId) {
+        // We're already in a chat, return the current chat ID
+        return chatId
+      }
+      // No current chat, so create a new one for this conversation
     }
 
     if (messages.length === 0) {
@@ -82,7 +87,9 @@ export function useChatOperations({
         if (isAuthenticated) {
           window.history.pushState(null, "", `/c/${newChat.id}`)
         } else {
-          localStorage.setItem("guestChatId", newChat.id)
+          // Don't store guest chat ID in localStorage anymore
+          // Each conversation should be separate
+          window.history.pushState(null, "", `/c/${newChat.id}`)
         }
 
         return newChat.id
